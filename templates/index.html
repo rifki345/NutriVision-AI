@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediksi Gizi Makanan</title>
+    
+    <!-- CSS digabungkan langsung ke dalam HTML untuk memastikan tampilan selalu benar -->
+    <style>
+        /* Import Google Font untuk tampilan yang lebih modern */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        /* Reset dasar dan gaya body */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f4f8; /* Warna latar belakang yang lembut */
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* Kontainer utama yang membungkus konten */
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Header Aplikasi */
+        .app-header h1 {
+            color: #00796b; /* Hijau tua */
+            font-weight: 700;
+            margin: 0;
+        }
+        .app-header p {
+            color: #555;
+            margin-top: 5px;
+            margin-bottom: 30px;
+        }
+
+        /* Tombol utama */
+        .btn {
+            background: linear-gradient(45deg, #00796b, #00897b);
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 121, 107, 0.2);
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(0, 121, 107, 0.3);
+        }
+
+        /* Tombol sekunder untuk galeri */
+        .btn.btn-secondary {
+            background: #f0f4f8;
+            color: #00796b;
+            border: 2px solid #e0f2f1;
+            box-shadow: none;
+        }
+        .btn.btn-secondary:hover {
+            background: #e0f2f1;
+            border-color: #b2dfdb;
+            box-shadow: none;
+        }
+
+        /* Sembunyikan input file asli */
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Kontainer untuk tombol pilihan */
+        .button-group {
+            margin-bottom: 25px;
+        }
+        
+        /* Kontainer untuk pratinjau gambar */
+        .preview-container {
+            display: none; /* Sembunyi secara default */
+            margin-bottom: 25px;
+            min-height: 180px;
+            border: 2px solid #b2dfdb;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #image-preview {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+        }
+
+        /* Indikator Loading */
+        .loader-wrapper {
+            display: none; /* Sembunyi secara default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .loader {
+            border: 6px solid #e0f2f1; /* Hijau sangat muda */
+            border-top: 6px solid #00796b; /* Hijau utama */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1.2s linear infinite;
+        }
+        .loader-wrapper p {
+            margin-top: 15px;
+            font-weight: 600;
+            color: #00796b;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsif untuk layar kecil */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="app-header">
+            <h1>NutriVision AI</h1>
+            <p>Unggah foto makanan untuk mengetahui perkiraan gizinya.</p>
+        </header>
+        
+        <form id="upload-form" method="POST" enctype="multipart/form-data">
+            
+            <!-- Tombol pilihan terpisah untuk kamera dan galeri -->
+            <div class="button-group" id="choice-buttons">
+                <button type="button" id="camera-btn" class="btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 10px;">
+                        <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                        <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1z"/>
+                    </svg>
+                    Ambil Foto Kamera
+                </button>
+                <button type="button" id="gallery-btn" class="btn btn-secondary">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 10px;">
+                        <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                        <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1v9l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V3a1 1 0 0 0-1-1zM2 4.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+                    </svg>
+                    Pilih dari Galeri
+                </button>
+            </div>
+            
+            <!-- Input file ini disembunyikan dan dipicu oleh JavaScript -->
+            <input type="file" name="image" id="image-upload" accept="image/*" required>
+
+            <!-- Kontainer untuk pratinjau gambar -->
+            <div class="preview-container" id="preview-container">
+                <img id="image-preview" src="#" alt="Pratinjau Gambar"/>
+            </div>
+
+            <button type="submit" class="btn" id="submit-btn" style="display: none;">Dapatkan Prediksi</button>
+        </form>
+
+        <div class="loader-wrapper" id="loader">
+            <div class="loader"></div>
+            <p>Menganalisis gambar...</p>
+        </div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('upload-form');
+        const imageUpload = document.getElementById('image-upload');
+        const imagePreview = document.getElementById('image-preview');
+        const submitBtn = document.getElementById('submit-btn');
+        const loader = document.getElementById('loader');
+        
+        // Elemen baru
+        const choiceButtons = document.getElementById('choice-buttons');
+        const galleryBtn = document.getElementById('gallery-btn');
+        const cameraBtn = document.getElementById('camera-btn');
+        const previewContainer = document.getElementById('preview-container');
+
+        // Event listener untuk tombol galeri
+        galleryBtn.addEventListener('click', () => {
+            imageUpload.removeAttribute('capture');
+            imageUpload.click();
+        });
+
+        // Event listener untuk tombol kamera
+        cameraBtn.addEventListener('click', () => {
+            imageUpload.setAttribute('capture', 'environment');
+            imageUpload.click();
+        });
+
+        // Menangani saat file dipilih
+        imageUpload.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    
+                    // Sembunyikan tombol pilihan
+                    choiceButtons.style.display = 'none';
+                    // Tampilkan pratinjau dan tombol submit
+                    previewContainer.style.display = 'flex';
+                    submitBtn.style.display = 'flex'; 
+                };
+                
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Menangani saat form dikirim
+        uploadForm.addEventListener('submit', function() {
+            submitBtn.style.display = 'none';
+            previewContainer.style.display = 'none';
+            loader.style.display = 'flex';
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Prediksi Gizi</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+        }
+
+        .app-header h2 {
+            color: #00796b;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00796b, #00897b);
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(0, 121, 107, 0.2);
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(0, 121, 107, 0.3);
+        }
+
+        .result-image-wrapper {
+            margin-bottom: 30px;
+        }
+
+        .result-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-card {
+            text-align: left;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 10px 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .result-item {
+            padding: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            display: block;
+            font-size: 14px;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .food-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00796b;
+        }
+
+        .result-item.recommendation {
+            background-color: #e0f2f1;
+            margin: 0 -25px;
+            padding: 20px 25px;
+        }
+
+        .result-item.recommendation:last-child {
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        .result-item.recommendation .result-label {
+            color: #006a60;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h2>Hasil Analisis Gambar</h2>
+        </header>
+
+        <div class="result-image-wrapper">
+            <img src="{{ image_path }}" alt="Gambar Makanan yang Dianalisis" class="result-image">
+        </div>
+
+        <div class="result-card">
+
+            <div class="result-item">
+                <span class="result-label">Prediksi Makanan</span>
+                <p class="result-value food-name">{{ food }}</p>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Perkiraan Kandungan Gizi</span>
+                <p class="result-value">{{ prediction }}</p>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Kepercayaan Prediksi Makanan</span>
+                <p class="result-value">{{ food_confidence }}%</p>
+                <small>Model yakin sebesar <strong>{{ food_confidence }}%</strong> bahwa gambar ini adalah <strong>{{ food }}</strong>.</small>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Kepercayaan Kandungan Gizi</span>
+                <p class="result-value">{{ gizi_confidence }}%</p>
+                <small>Model memperkirakan sebesar <strong>{{ gizi_confidence }}%</strong> bahwa makanan ini mengandung <strong>{{ prediction }}</strong>.</small>
+            </div>
+
+            <div class="result-item recommendation">
+                <span class="result-label">Saran Umum</span>
+                <p class="result-value">{{ recommendation }}</p>
+            </div>
+
+            <div class="result-item recommendation">
+                <span class="result-label">Saran Coach AI</span>
+                <pre class="result-value" style="white-space: pre-wrap;">{{ recommendation_ai }}</pre>
+            </div>
+
+        </div>
+
+        <a href="/" class="btn">Coba Gambar Lain</a>
+    </div>
+</body>
+</html>
