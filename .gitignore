@@ -4,3 +4,4 @@ env/
 venv/
 dataset/
 dataset_gambar/
+.env
