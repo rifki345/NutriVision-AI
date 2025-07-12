@@ -8,16 +8,61 @@ from tensorflow.keras.preprocessing import image
 import numpy as np
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# Load model
+# --- NEW: Auto download dataset from Google Drive ---
+import gdown
+
+def download_from_drive(folder_url, save_path):
+    """
+    Download all files from a Google Drive folder.
+    """
+    print(f"Downloading dataset from: {folder_url}")
+    os.makedirs(save_path, exist_ok=True)
+    try:
+        # Use gdown to download folder
+        gdown.download_folder(folder_url, output=save_path, quiet=False, use_cookies=False)
+        print(f"Download complete: {save_path}")
+    except Exception as e:
+        print(f"Error downloading dataset: {e}")
+
+def zip_folder(folder_path, zip_name):
+    """
+    Compress a folder into ZIP file
+    """
+    import shutil
+    print(f"Compressing folder {folder_path} into {zip_name}.zip ...")
+    shutil.make_archive(zip_name, 'zip', folder_path)
+    print(f"Folder compressed: {zip_name}.zip")
+
+def prepare_datasets():
+    dataset_folder = "dataset"
+    dataset_gambar_folder = "dataset_gambar"
+
+    dataset_drive_url = "https://drive.google.com/drive/folders/18mUG942NXgsuXsNw6bIbS7q9uYDrFlSf"  # your folder URL
+
+    # Download dataset folder if not exists
+    if not os.path.exists(dataset_folder):
+        download_from_drive(dataset_drive_url, dataset_folder)
+        zip_folder(dataset_folder, "dataset")  # Optional: create ZIP
+
+    if not os.path.exists(dataset_gambar_folder):
+        download_from_drive(dataset_drive_url, dataset_gambar_folder)
+        zip_folder(dataset_gambar_folder, "dataset_gambar")  # Optional: create ZIP
+
+# Call prepare datasets
+prepare_datasets()
+# --- END OF NEW ---
+
+# Load pre-trained models
 model_makanan = load_model("model/model_makanan.keras")
 model_gizi = load_model("model/model_transfer.keras")
 
-# Label klasifikasi
+# Labels
 class_labels_makanan = [
     "Ayam Goreng", "Burger", "French Fries", "Gado-Gado", "Ikan Goreng",
     "Mie Goreng", "Nasi Goreng", "Nasi Padang", "Pizza", "Rawon",
@@ -41,19 +86,18 @@ def get_deepseek_saran(nama_makanan, kandungan_gizi):
         return "API Key tidak ditemukan."
 
     prompt = (
-    f"Saya telah menganalisis gambar makanan. "
-    f"Makanan yang terdeteksi adalah '{nama_makanan}' dengan kandungan gizi '{kandungan_gizi}'. "
-    f"Berikan saran kombinasi makanan sehat untuk menyeimbangkan makanan tersebut. "
-    f"Tuliskan dalam format yang rapi dan mudah dibaca seperti berikut:\n\n"
-    f"Untuk menyeimbangkan makanan Rawon, kamu bisa kombinasikan dengan:\n"
-    f"1. Sayuran tinggi serat — contohnya: ...\n"
-    f"2. Protein rendah lemak — contohnya: ...\n"
-    f"3. Lemak sehat — contohnya: ...\n\n"
-    f"Alternatif cara penyajian:\n"
-    f"Tambahkan tips sehat seperti membatasi karbohidrat, mengganti santan, dll.\n\n"
-    f"Gunakan gaya bahasa seperti pelatih nutrisi. Jangan gunakan simbol seperti tanda bintang atau markdown."
+        f"Saya telah menganalisis gambar makanan. "
+        f"Makanan yang terdeteksi adalah '{nama_makanan}' dengan kandungan gizi '{kandungan_gizi}'. "
+        f"Berikan saran kombinasi makanan sehat untuk menyeimbangkan makanan tersebut. "
+        f"Tuliskan dalam format yang rapi dan mudah dibaca seperti berikut:\n\n"
+        f"Untuk menyeimbangkan makanan Rawon, kamu bisa kombinasikan dengan:\n"
+        f"1. Sayuran tinggi serat — contohnya: ...\n"
+        f"2. Protein rendah lemak — contohnya: ...\n"
+        f"3. Lemak sehat — contohnya: ...\n\n"
+        f"Alternatif cara penyajian:\n"
+        f"Tambahkan tips sehat seperti membatasi karbohidrat, mengganti santan, dll.\n\n"
+        f"Gunakan gaya bahasa seperti pelatih nutrisi. Jangan gunakan simbol seperti tanda bintang atau markdown."
     )
-
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -62,16 +106,14 @@ def get_deepseek_saran(nama_makanan, kandungan_gizi):
 
     body = {
         "model": "deepseek/deepseek-r1:free",
-        "messages": [
-            {"role": "user", "content": prompt}
-        ]
+        "messages": [{"role": "user", "content": prompt}]
     }
 
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
-            json=body  # pakai json= bukan data=json.dumps()
+            json=body
         )
         response.raise_for_status()
         hasil = response.json()
@@ -110,18 +152,17 @@ def index():
             food, food_conf, gizi_label, gizi_conf, rekomendasi, rekomendasi_ai = predict_nutrition(filepath)
 
             return render_template('results.html',
-                       image_path=filepath,
-                       food=food,
-                       food_confidence=round(food_conf, 2),
-                       prediction=gizi_label,
-                       gizi_confidence=round(gizi_conf, 2),
-                       recommendation=rekomendasi,
-                       recommendation_ai=rekomendasi_ai)
+                                   image_path=filepath,
+                                   food=food,
+                                   food_confidence=round(food_conf, 2),
+                                   prediction=gizi_label,
+                                   gizi_confidence=round(gizi_conf, 2),
+                                   recommendation=rekomendasi,
+                                   recommendation_ai=rekomendasi_ai)
 
     return render_template('index.html')
 
 # Run server
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
