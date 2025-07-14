@@ -2,67 +2,46 @@ from flask import Flask, render_template, request
 import os
 import requests
 import json
+import kagglehub  # Tambahkan import kagglehub
 from werkzeug.utils import secure_filename
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# --- NEW: Auto download dataset from Google Drive ---
-import gdown
+# Folder dataset Kaggle
+DATASET_FOOD_DIR = "/tmp/dataset-food-classification"
+DATASET_GIZI_DIR = "/tmp/tinggi-karbohidrat-lemak-protein"
 
-def download_from_drive(folder_url, save_path):
-    """
-    Download all files from a Google Drive folder.
-    """
-    print(f"Downloading dataset from: {folder_url}")
-    os.makedirs(save_path, exist_ok=True)
-    try:
-        # Use gdown to download folder
-        gdown.download_folder(folder_url, output=save_path, quiet=False, use_cookies=False)
-        print(f"Download complete: {save_path}")
-    except Exception as e:
-        print(f"Error downloading dataset: {e}")
+# Fungsi download dataset Kaggle
+def download_datasets():
+    if not os.path.exists(DATASET_FOOD_DIR):
+        print("Downloading Indonesian Food Dataset...")
+        kagglehub.dataset_download("rizkyyk/dataset-food-classification", path="/tmp")
+        print("Indonesian Food Dataset downloaded.")
+    else:
+        print("Indonesian Food Dataset already exists.")
 
-def zip_folder(folder_path, zip_name):
-    """
-    Compress a folder into ZIP file
-    """
-    import shutil
-    print(f"Compressing folder {folder_path} into {zip_name}.zip ...")
-    shutil.make_archive(zip_name, 'zip', folder_path)
-    print(f"Folder compressed: {zip_name}.zip")
+    if not os.path.exists(DATASET_GIZI_DIR):
+        print("Downloading Tinggi Karbohidrat/Lemak/Protein Dataset...")
+        kagglehub.dataset_download("muhammadrifki3ia28/tinggi-karbohidrat-lemak-protein", path="/tmp")
+        print("Tinggi Karbohidrat/Lemak/Protein Dataset downloaded.")
+    else:
+        print("Gizi Dataset already exists.")
 
-def prepare_datasets():
-    dataset_folder = "dataset"
-    dataset_gambar_folder = "dataset_gambar"
+# Jalankan download dataset saat server start
+download_datasets()
 
-    dataset_drive_url = "https://drive.google.com/drive/folders/18mUG942NXgsuXsNw6bIbS7q9uYDrFlSf"  # your folder URL
-
-    # Download dataset folder if not exists
-    if not os.path.exists(dataset_folder):
-        download_from_drive(dataset_drive_url, dataset_folder)
-        zip_folder(dataset_folder, "dataset")  # Optional: create ZIP
-
-    if not os.path.exists(dataset_gambar_folder):
-        download_from_drive(dataset_drive_url, dataset_gambar_folder)
-        zip_folder(dataset_gambar_folder, "dataset_gambar")  # Optional: create ZIP
-
-# Call prepare datasets
-prepare_datasets()
-# --- END OF NEW ---
-
-# Load pre-trained models
+# Load model
 model_makanan = load_model("model/model_makanan.keras")
 model_gizi = load_model("model/model_transfer.keras")
 
-# Labels
+# Label klasifikasi
 class_labels_makanan = [
     "Ayam Goreng", "Burger", "French Fries", "Gado-Gado", "Ikan Goreng",
     "Mie Goreng", "Nasi Goreng", "Nasi Padang", "Pizza", "Rawon",
@@ -86,18 +65,19 @@ def get_deepseek_saran(nama_makanan, kandungan_gizi):
         return "API Key tidak ditemukan."
 
     prompt = (
-        f"Saya telah menganalisis gambar makanan. "
-        f"Makanan yang terdeteksi adalah '{nama_makanan}' dengan kandungan gizi '{kandungan_gizi}'. "
-        f"Berikan saran kombinasi makanan sehat untuk menyeimbangkan makanan tersebut. "
-        f"Tuliskan dalam format yang rapi dan mudah dibaca seperti berikut:\n\n"
-        f"Untuk menyeimbangkan makanan Rawon, kamu bisa kombinasikan dengan:\n"
-        f"1. Sayuran tinggi serat — contohnya: ...\n"
-        f"2. Protein rendah lemak — contohnya: ...\n"
-        f"3. Lemak sehat — contohnya: ...\n\n"
-        f"Alternatif cara penyajian:\n"
-        f"Tambahkan tips sehat seperti membatasi karbohidrat, mengganti santan, dll.\n\n"
-        f"Gunakan gaya bahasa seperti pelatih nutrisi. Jangan gunakan simbol seperti tanda bintang atau markdown."
+    f"Saya telah menganalisis gambar makanan. "
+    f"Makanan yang terdeteksi adalah '{nama_makanan}' dengan kandungan gizi '{kandungan_gizi}'. "
+    f"Berikan saran kombinasi makanan sehat untuk menyeimbangkan makanan tersebut. "
+    f"Tuliskan dalam format yang rapi dan mudah dibaca seperti berikut:\n\n"
+    f"Untuk menyeimbangkan makanan Rawon, kamu bisa kombinasikan dengan:\n"
+    f"1. Sayuran tinggi serat — contohnya: ...\n"
+    f"2. Protein rendah lemak — contohnya: ...\n"
+    f"3. Lemak sehat — contohnya: ...\n\n"
+    f"Alternatif cara penyajian:\n"
+    f"Tambahkan tips sehat seperti membatasi karbohidrat, mengganti santan, dll.\n\n"
+    f"Gunakan gaya bahasa seperti pelatih nutrisi. Jangan gunakan simbol seperti tanda bintang atau markdown."
     )
+
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -106,14 +86,16 @@ def get_deepseek_saran(nama_makanan, kandungan_gizi):
 
     body = {
         "model": "deepseek/deepseek-r1:free",
-        "messages": [{"role": "user", "content": prompt}]
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
     }
 
     try:
         response = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
-            json=body
+            json=body  # pakai json= bukan data=json.dumps()
         )
         response.raise_for_status()
         hasil = response.json()
@@ -152,13 +134,13 @@ def index():
             food, food_conf, gizi_label, gizi_conf, rekomendasi, rekomendasi_ai = predict_nutrition(filepath)
 
             return render_template('results.html',
-                                   image_path=filepath,
-                                   food=food,
-                                   food_confidence=round(food_conf, 2),
-                                   prediction=gizi_label,
-                                   gizi_confidence=round(gizi_conf, 2),
-                                   recommendation=rekomendasi,
-                                   recommendation_ai=rekomendasi_ai)
+                       image_path=filepath,
+                       food=food,
+                       food_confidence=round(food_conf, 2),
+                       prediction=gizi_label,
+                       gizi_confidence=round(gizi_conf, 2),
+                       recommendation=rekomendasi,
+                       recommendation_ai=rekomendasi_ai)
 
     return render_template('index.html')
 
